@@ -1,0 +1,8 @@
+dist/
+captchaImage.jpg
+log.txt
+icon.ico
+*.spec
+build/
+.vscode/
+*.exe
