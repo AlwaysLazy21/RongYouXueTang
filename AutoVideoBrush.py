@@ -246,8 +246,13 @@ def chapter_html_parse(video_demo: Video, video_ll: list):
         '\r', '').replace('\n', '').replace('\t', '')
     video_tags = main_content.find_all('video')
     if len(video_tags) != 0:
-        isComplete = main_content.find(id='sp_index_1').get_text()
-        video_demo.isComplete = isComplete
+        # TODO 使用 re 进行解析，定位到 后面的部分 提示
+        try:
+            isComplete = main_content.find(id='sp_index_1').get_text()
+        except Exception:
+            isComplete = main_content.find(id='sp_index_2').get_text()
+        finally:
+            video_demo.isComplete = isComplete
     video_demo.zjmc = title
     for video_tag in video_tags:
         video = video_demo
@@ -313,7 +318,7 @@ def studentsWatchVideoRecordings(video: Video):
     else:
         resp.encoding = resp.apparent_encoding
         info = json.loads(resp.text)
-        write_log('学习记录', info['msg'], video.zjmc)
+        write_log('学习记录'+info['msg']+video.zjmc)
         if info['msg'] != '操作成功':
             print("warning:学习记录上报异常", info['msg'])
 
