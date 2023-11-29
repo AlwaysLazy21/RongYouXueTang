@@ -7,6 +7,9 @@ import re
 from moviepy.editor import VideoFileClip
 import random
 import time
+from fake_useragent import UserAgent
+
+ua = UserAgent()
 
 
 session = requests.Session()
@@ -14,11 +17,14 @@ Course_list = []
 cur_course = ''
 Chapter_list = []
 Video_list = []
-
+random_ua= ua.random
 html = ''
 username = ''
 password = ''
 
+headers = {
+    'User-Agent': random_ua
+}
 
 class Video:
     def __init__(self, isComplete='', url='', kcdm='', zjdm='', bjdm='', spdm='', yhdm='', spbfsc=0.000000, spzsc='', zjmc=''):
@@ -86,9 +92,7 @@ def input_Verification_code():
 
 def get_captchaImage():
     target_url = "https://www.livedu.com.cn/ispace4.0/captchaImage"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.get(url=target_url, headers=headers)
     if resp.status_code != 200:
         write_log("验证码请求失败")
@@ -110,9 +114,7 @@ def login():
         "code": code,
         "qj_flag": 1
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.post(url=target_url, data=data, headers=headers)
     resp.close()
     login_status = json.loads(resp.text)
@@ -131,9 +133,7 @@ def get_all_courses():
     params = {
         'kczt': 1
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.get(url=target_url, params=params, headers=headers)
     resp.close()
     if resp.status_code != 200:
@@ -182,9 +182,7 @@ def get_cur_course_info():
         "szbj": "",
         "styflag": 1
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.post(url=target_url, data=data, headers=headers)
     resp.close()
     if resp.status_code != 200:
@@ -219,9 +217,7 @@ def get_chapter_info(chapter: dict):
         'bjdm': chapter['bjdm'],
         'zjdm': chapter['zjdm']
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.get(url=target_url, params=params, headers=headers)
     resp.close()
     title = chapter['zjmc']
@@ -286,9 +282,7 @@ def initKcspSq(video: Video):
         "spdm": video.spdm,
         "spzsc": video.spzsc
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.post(url=target_url, data=data, headers=headers)
     resp.close()
     if resp.status_code != 200:
@@ -298,7 +292,7 @@ def initKcspSq(video: Video):
         resp.encoding = resp.apparent_encoding
         write_log("初始化视频成功"+video.zjmc)
         info = json.loads(resp.text)
-        print('初始化', info['msg'], video.zjmc)
+        print('初始化', info['msg'], video.zjmc, video.spzsc, 's')
 
 
 def studentsWatchVideoRecordings(video: Video):
@@ -310,9 +304,7 @@ def studentsWatchVideoRecordings(video: Video):
         "zjmc": video.zjmc,
         "spdm": video.spdm
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.post(url=target_url, data=data, headers=headers)
     resp.close()
     if resp.status_code != 200:
@@ -320,9 +312,10 @@ def studentsWatchVideoRecordings(video: Video):
         return
     else:
         resp.encoding = resp.apparent_encoding
-        write_log("学习记录成功"+video.zjmc)
         info = json.loads(resp.text)
-        print('学习记录', info['msg'], video.zjmc)
+        write_log('学习记录', info['msg'], video.zjmc)
+        if info['msg'] != '操作成功':
+            print("warning:学习记录上报异常", info['msg'])
 
 
 def add_and_randomize(number):
@@ -347,9 +340,7 @@ def recordViewingTime(video: Video, flag=False):
         "spbfsc": video.spbfsc,
         "spzsc": int(video.spzsc)
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.post(url=target_url, data=data, headers=headers)
     resp.close()
     if resp.status_code != 200:
@@ -359,7 +350,9 @@ def recordViewingTime(video: Video, flag=False):
         resp.encoding = resp.apparent_encoding
         write_log("视频观看时间成功"+video.zjmc)
         info = json.loads(resp.text)
-        print('视频观看时间', int(video.spbfsc), info['msg'], video.zjmc)
+        if not flag:
+            print('\r视频观看时间', int(video.spbfsc), '/', int(video.spzsc),
+                  info['msg'], video.zjmc, end='        ', flush=True)
         video.spbfsc = add_and_randomize(video.spbfsc)
 
 
@@ -374,9 +367,7 @@ def checkStudentSubmitVideoIsLegal(video: Video):
         "gksc": int(video.spzsc)+30,
         "spzsc": int(video.spzsc)
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.post(url=target_url, data=data, headers=headers)
     resp.close()
     if resp.status_code != 200:
@@ -396,9 +387,7 @@ def updKcspSqzt(video: Video):
         "zjdm": video.zjdm,
         "streamName": video.url.split("/")[-1]
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    }
+    global headers
     resp = session.post(url=target_url, data=data, headers=headers)
     resp.close()
     if resp.status_code != 200:
@@ -423,8 +412,8 @@ def increaseVideoDuration():
             initKcspSq(video)
             while video.spbfsc < video.spzsc:
                 recordViewingTime(video)
-                time.sleep(14.66)
-                if random.randint(1, 100) % 25 == 0:
+                time.sleep(15)
+                if random.randint(1, 100) % 30 == 0:
                     studentsWatchVideoRecordings(video)
             checkStudentSubmitVideoIsLegal(video)
             updKcspSqzt(video)
